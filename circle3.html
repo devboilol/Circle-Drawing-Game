@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Circle Drawing Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        canvas {
+            border: 1px solid black;
+        }
+
+        button {
+            margin-top: 20px;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 600;
+            margin-right: 10px;
+        }
+
+        #buttonContainer {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+        }
+
+        .toolButton {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border: 1px solid black;
+            cursor: pointer;
+        }
+
+        .selected {
+            border: 2px solid red;
+        }
+    </style>
+</head>
+<body>
+    <h1>How can you draw a perfect circle?</h1>
+    <canvas id="circleCanvas" width="500" height="500"></canvas>
+    <div id="buttonContainer">
+        <button class="toolButton" id="smallBrush">S</button>
+        <button class="toolButton" id="mediumBrush">M</button>
+        <button class="toolButton" id="largeBrush">L</button>
+        <button class="toolButton" id="eraser">E</button>
+        <button id="resetButton">Reset</button>
+    </div>
+    <p id="resultMessage">Accuracy: 0%</p>
+    <script>
+        const canvas = document.getElementById('circleCanvas');
+        const ctx = canvas.getContext('2d');
+        const resetButton = document.getElementById('resetButton');
+        const resultMessage = document.getElementById('resultMessage');
+        const smallBrush = document.getElementById('smallBrush');
+        const mediumBrush = document.getElementById('mediumBrush');
+        const largeBrush = document.getElementById('largeBrush');
+        const eraser = document.getElementById('eraser');
+
+        let isDrawing = false;
+        let startX, startY;
+        let points = [];
+        let currentTool = 'brush';
+        let lineWidth = 2;
+
+        canvas.addEventListener('mousedown', (e) => {
+            isDrawing = true;
+            startX = e.offsetX;
+            startY = e.offsetY;
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            points = [{x: startX, y: startY}];
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (isDrawing) {
+                ctx.lineTo(e.offsetX, e.offsetY);
+                ctx.stroke();
+                points.push({x: e.offsetX, y: e.offsetY});
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isDrawing = false;
+            ctx.closePath();
+            calculateAccuracy();
+        });
+
+        resetButton.addEventListener('click', () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            resultMessage.textContent = 'Accuracy: 0%';
+        });
+
+        function calculateAccuracy() {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radii = points.map(point => Math.sqrt((point.x - centerX) ** 2 + (point.y - centerY) ** 2));
+            const avgRadius = radii.reduce((sum, r) => sum + r, 0) / radii.length;
+            const variance = radii.reduce((sum, r) => sum + (r - avgRadius) ** 2, 0) / radii.length;
+            const stdDev = Math.sqrt(variance);
+            const accuracy = Math.max(0, (1 - stdDev / avgRadius) * 100);
+            resultMessage.textContent = `Accuracy: ${accuracy.toFixed(2)}%`;
+        }
+
+        function selectTool(tool, size) {
+            currentTool = tool;
+            lineWidth = size;
+            ctx.lineWidth = lineWidth;
+            ctx.globalCompositeOperation = tool === 'eraser' ? 'destination-out' : 'source-over';
+        }
+
+        smallBrush.addEventListener('click', () => selectTool('brush', 2));
+        mediumBrush.addEventListener('click', () => selectTool('brush', 5));
+        largeBrush.addEventListener('click', () => selectTool('brush', 10));
+        eraser.addEventListener('click', () => selectTool('eraser', 20));
+
+        function setSelected(button) {
+            const buttons = document.querySelectorAll('.toolButton');
+            buttons.forEach(btn => btn.classList.remove('selected'));
+            button.classList.add('selected');
+        }
+
+        smallBrush.addEventListener('click', () => setSelected(smallBrush));
+        mediumBrush.addEventListener('click', () => setSelected(mediumBrush));
+        largeBrush.addEventListener('click', () => setSelected(largeBrush));
+        eraser.addEventListener('click', () => setSelected(eraser));
+
+        // Initialize default tool
+        selectTool('brush', 2);
+        setSelected(smallBrush);
+    </script>
+</body>
+</html>
